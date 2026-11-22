@@ -126,6 +126,20 @@
   // ---------- карточка ----------
   const dlg = $("detail");
   let returnFocus = null;
+  let current = null;
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const animImg = $("d-anim");
+  const toggle = $("d-toggle");
+
+  // Анимация — это SVG; «пауза» подменяет её статичной картинкой
+  function setAnim(playing) {
+    if (!current) return;
+    animImg.src = imgSrc(current.id, playing ? "-anim" : "");
+    animImg.alt = current.name + (playing ? ": анимация выполнения" : ": конечное положение");
+    toggle.setAttribute("aria-pressed", String(playing));
+    toggle.textContent = playing ? "Пауза" : "Показать движение";
+  }
+  toggle.addEventListener("click", () => setAnim(toggle.getAttribute("aria-pressed") !== "true"));
 
   function fillList(node, items) {
     node.replaceChildren(...items.map((t) => el("li", { text: t })));
@@ -142,6 +156,8 @@
     const img = $("d-img");
     img.alt = ex.name + ": исходное и конечное положение";
     img.src = imgSrc(ex.id, "-how");
+    current = ex;
+    setAnim(!reduceMotion.matches);
     fillList($("d-steps"), ex.steps);
     fillList($("d-mistakes"), ex.mistakes);
     if (!dlg.open) dlg.showModal();
@@ -152,6 +168,7 @@
   function closeDetail() { if (dlg.open) dlg.close(); }
 
   dlg.addEventListener("close", () => {
+    animImg.removeAttribute("src");
     history.replaceState(null, "", location.pathname + location.search);
     if (returnFocus) returnFocus.focus();
   });
