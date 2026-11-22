@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; require-trusted-types-for 'script'; trusted-types 'none'; upgrade-insecure-requests">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Упражнения с гантелями и длинной гантелью на все группы мышц: картинки и техника выполнения.">
+<title>треня темы</title>
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<script src="data.js" defer></script>
+<script src="app.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#list">К упражнениям</a>
+
+<header class="top">
+  <h1 class="title">треня темы</h1>
+  <p class="lead" id="lead">Упражнения с гантелями на всё тело: как выглядит и как делать.</p>
+</header>
+
+<nav class="filters" aria-label="Фильтры">
+  <fieldset class="plates">
+    <legend class="visually-hidden">Группа мышц</legend>
+    <div class="plates-row" id="groups"></div>
+  </fieldset>
+
+  <div class="filters-row">
+    <fieldset class="seg">
+      <legend class="visually-hidden">Снаряд</legend>
+      <div class="seg-row" id="equip"></div>
+    </fieldset>
+    <label class="search">
+      <span class="visually-hidden">Поиск упражнения</span>
+      <input id="q" type="search" placeholder="Поиск: жим, бицепс, присед…" maxlength="40" autocomplete="off" spellcheck="false">
+    </label>
+  </div>
+</nav>
+
+<main id="list" class="list" tabindex="-1">
+  <noscript><p class="empty">Включи JavaScript, чтобы увидеть список упражнений.</p></noscript>
+</main>
+
+<dialog id="detail" class="detail" aria-labelledby="d-title">
+  <div class="detail-inner">
+    <button class="close" id="d-close" type="button" aria-label="Закрыть">×</button>
+    <p class="d-meta" id="d-meta"></p>
+    <h2 class="d-title" id="d-title"></h2>
+    <p class="d-muscles" id="d-muscles"></p>
+    <figure class="d-fig">
+      <img id="d-img" alt="" width="422" height="218">
+      <figcaption>1 — исходное положение, 2 — конечное. Стрелка показывает движение.</figcaption>
+    </figure>
+    <h3>Как делать</h3>
+    <ol class="d-steps" id="d-steps"></ol>
+    <h3>Частые ошибки</h3>
+    <ul class="d-mistakes" id="d-mistakes"></ul>
+  </div>
+</dialog>
+
+<footer class="foot">
+  <p>Начинай с лёгкого веса и следи за техникой. Если что-то болит в суставах — остановись.</p>
+</footer>
+</body>
+</html>

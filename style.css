@@ -1,0 +1,260 @@
+:root {
+  --bg: #EDEFEA;
+  --surface: #FFFFFF;
+  --mat: #F7F8F5;
+  --ink: #1B2230;
+  --muted: #5B6371;
+  --line: #D3D7DC;
+  --focus: #1E5AA8;
+  --chest: #D7263D;
+  --back: #1E5AA8;
+  --shoulders: #D99A00;
+  --arms: #2E8B57;
+  --legs: #6B4FA0;
+  --core: #E0631F;
+  --display: "Bahnschrift", "DIN Alternate", "DIN Condensed", "Roboto Condensed", "Arial Narrow", sans-serif;
+  --body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141922;
+    --surface: #1D2430;
+    --mat: #EEF0EC;
+    --ink: #E9ECF0;
+    --muted: #A3ABB8;
+    --line: #333C4A;
+    --focus: #7FB0F0;
+    color-scheme: dark;
+  }
+}
+*, *::before, *::after { box-sizing: inherit; }
+
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.5 var(--body);
+}
+img { max-width: 100%; height: auto; display: block; }
+button, input { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+.skip {
+  position: absolute; left: 1rem; top: -3rem; z-index: 5;
+  background: var(--ink); color: var(--bg); padding: .5rem .8rem; border-radius: 6px;
+}
+.skip:focus { top: 1rem; }
+
+/* ---------- шапка ---------- */
+.top, .filters, .list, .foot {
+  max-width: 1180px;
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 4vw, 2.5rem);
+}
+.top { padding-top: clamp(2rem, 6vw, 4.5rem); }
+.title {
+  font-family: var(--display);
+  font-weight: 700;
+  font-stretch: condensed;
+  font-size: clamp(3.4rem, 13vw, 9rem);
+  line-height: .86;
+  letter-spacing: -.02em;
+  margin: 0;
+}
+.lead {
+  margin: 1rem 0 0;
+  max-width: 34ch;
+  font-size: 1.125rem;
+  color: var(--muted);
+}
+
+/* ---------- фильтры: блины ---------- */
+.filters { padding-top: 2rem; }
+fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.plates-row {
+  display: flex;
+  gap: clamp(.6rem, 2vw, 1.1rem);
+  overflow-x: auto;
+  padding: .4rem .2rem 1rem;
+  scrollbar-width: thin;
+}
+.plate {
+  flex: none;
+  display: grid;
+  justify-items: center;
+  gap: .45rem;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--display);
+  font-size: 1rem;
+}
+.plate-disc {
+  width: clamp(3.6rem, 9vw, 4.6rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--c, var(--ink));
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 0 0 5px rgb(255 255 255 / .18), inset 0 0 0 11px var(--c, var(--ink));
+  transition: transform .18s ease;
+}
+.plate-disc::after {
+  content: "";
+  width: 22%; aspect-ratio: 1; border-radius: 50%;
+  background: var(--bg);
+}
+.plates-row:not([data-active="all"]) .plate[aria-pressed="false"] .plate-disc { opacity: .32; transform: scale(.88); }
+.plates-row[data-active="all"] .plate[aria-pressed="false"] .plate-disc { transform: scale(.88); }
+.plate[aria-pressed="true"] .plate-disc { transform: scale(1); }
+.plate-count { color: var(--muted); font-family: var(--body); font-size: .8rem; margin-top: -.35rem; }
+
+[data-group="all"] { --c: var(--ink); }
+[data-group="chest"] { --c: var(--chest); }
+[data-group="back"] { --c: var(--back); }
+[data-group="shoulders"] { --c: var(--shoulders); }
+[data-group="arms"] { --c: var(--arms); }
+[data-group="legs"] { --c: var(--legs); }
+[data-group="core"] { --c: var(--core); }
+
+.filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem 1rem;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 2px solid var(--ink);
+  padding-top: 1rem;
+}
+.seg-row { display: flex; flex-wrap: wrap; gap: .4rem; }
+.seg-btn {
+  border: 2px solid var(--ink);
+  background: transparent;
+  padding: .35rem .9rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.seg-btn[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.search input {
+  width: min(22rem, 100%);
+  padding: .5rem .9rem;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+}
+.search { flex: 1 1 14rem; display: flex; justify-content: flex-end; }
+
+/* ---------- список ---------- */
+.list { padding-top: 1.5rem; padding-bottom: 3rem; }
+.list:focus { outline: none; }
+.section { margin-top: 2.5rem; }
+.section-head {
+  display: flex; align-items: baseline; gap: .6rem;
+  font-family: var(--display);
+  font-size: clamp(1.6rem, 4vw, 2.3rem);
+  line-height: 1;
+  margin: 0 0 1rem;
+}
+.section-head::before {
+  content: "";
+  width: .7em; aspect-ratio: 1; border-radius: 50%;
+  background: var(--c);
+  align-self: center;
+}
+.section-head small { font-family: var(--body); font-size: .9rem; color: var(--muted); font-weight: 400; }
+
+.grid {
+  list-style: none; margin: 0; padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: 1rem;
+}
+.item {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  width: 100%; height: 100%;
+  text-align: left;
+  border: 0;
+  border-bottom: 4px solid var(--c);
+  background: var(--surface);
+  border-radius: 10px 10px 4px 4px;
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+}
+.item-img { background: var(--mat); padding: .6rem .6rem 0; }
+.item-body { padding: .8rem 1rem 1rem; display: grid; gap: .25rem; align-content: start; }
+.item-name { font-family: var(--display); font-size: 1.2rem; line-height: 1.15; font-weight: 700; }
+.item-muscles { color: var(--muted); font-size: .9rem; line-height: 1.35; }
+.item-eq { font-size: .8rem; color: var(--muted); margin-top: .35rem; }
+.item:hover .item-name { text-decoration: underline; text-underline-offset: 3px; }
+
+.empty { padding: 3rem 0; color: var(--muted); font-size: 1.1rem; }
+
+/* ---------- карточка упражнения ---------- */
+.detail {
+  border: 0;
+  padding: 0;
+  width: min(46rem, calc(100% - 1.5rem));
+  max-height: calc(100% - 1.5rem);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--ink);
+  border-top: 8px solid var(--c, var(--ink));
+}
+.detail::backdrop { background: rgb(10 14 20 / .6); }
+.detail[open] { animation: rise .2s ease-out; }
+@keyframes rise { from { transform: translateY(12px); opacity: 0; } }
+.detail-inner { padding: 1.4rem clamp(1rem, 4vw, 2rem) 2rem; position: relative; }
+.close {
+  position: absolute; top: .6rem; right: .6rem;
+  width: 2.6rem; height: 2.6rem;
+  border-radius: 50%;
+  border: 0;
+  background: var(--bg);
+  font-size: 1.6rem; line-height: 1;
+  cursor: pointer;
+}
+.d-meta { margin: 0; color: var(--muted); font-size: .9rem; padding-right: 3rem; }
+.d-title {
+  font-family: var(--display);
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  line-height: 1.02;
+  margin: .2rem 0 .4rem;
+  padding-right: 2.5rem;
+}
+.d-muscles { margin: 0; color: var(--muted); }
+.d-fig { margin: 1.2rem 0 0; }
+.d-fig img { width: 100%; background: var(--mat); border-radius: 10px; padding: .5rem; }
+.d-fig figcaption { font-size: .85rem; color: var(--muted); margin-top: .4rem; }
+.detail h3 { font-family: var(--display); font-size: 1.3rem; margin: 1.6rem 0 .6rem; }
+.d-steps { margin: 0; padding: 0; list-style: none; counter-reset: s; display: grid; gap: .7rem; max-width: 62ch; }
+.d-steps li { counter-increment: s; display: grid; grid-template-columns: 2rem 1fr; gap: .6rem; }
+.d-steps li::before {
+  content: counter(s);
+  width: 1.8rem; height: 1.8rem; border-radius: 50%;
+  background: var(--c); color: #fff;
+  display: grid; place-items: center;
+  font-family: var(--display); font-weight: 700;
+}
+.d-mistakes { margin: 0; padding-left: 1.2rem; display: grid; gap: .35rem; max-width: 62ch; }
+
+.foot { padding-bottom: 3rem; color: var(--muted); font-size: .9rem; }
+.foot p { border-top: 1px solid var(--line); padding-top: 1rem; margin: 0; max-width: 60ch; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* жёлтый блин: тёмные цифры для контраста */
+[data-group="shoulders"] .d-steps li::before { color: #1B2230; }
