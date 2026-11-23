@@ -21,7 +21,7 @@
   const groupOrder = DATA.groups.map((g) => g.id);
 
   const $ = (id) => document.getElementById(id);
-  const ALLOWED_ATTR = /^(data-[a-z-]+|aria-[a-z]+|type|alt|loading|width|height|decoding|role|tabindex|scope)$/;
+  const ALLOWED_ATTR = /^(data-[a-z-]+|aria-[a-z]+|type|alt|loading|width|height|decoding|role|tabindex|scope|id)$/;
   const el = (tag, props, children) => {
     const node = document.createElement(tag);
     if (props) {
@@ -182,17 +182,23 @@
   const programsBox = $("programs");
   const tabList = $("tab-list");
   const tabProg = $("tab-programs");
+  const tabHer = $("tab-her");
+  const herBox = $("her");
 
   function setView(view) {
     state.view = view;
     tabList.setAttribute("aria-pressed", String(view === "list"));
     tabProg.setAttribute("aria-pressed", String(view === "programs"));
+    tabHer.setAttribute("aria-pressed", String(view === "her"));
     const isList = view === "list";
     list.hidden = !isList; bar.hidden = !isList; mapWrap.hidden = !isList;
-    programsBox.hidden = isList;
+    programsBox.hidden = view !== "programs";
+    herBox.hidden = view !== "her";
+    store.set("trenya:view", view);
   }
   tabList.addEventListener("click", () => setView("list"));
   tabProg.addEventListener("click", () => setView("programs"));
+  tabHer.addEventListener("click", () => setView("her"));
 
   // ================= карта тела =================
   const mapParts = Array.from(document.querySelectorAll("#bodymap .m"));
@@ -252,6 +258,13 @@
     return true;
   }
 
+  function syncStars(id) {
+    const on = favs.has(id);
+    for (const b of document.querySelectorAll('.card-star[data-id="' + id + '"]')) {
+      b.setAttribute("aria-pressed", String(on));
+      b.setAttribute("aria-label", (on ? "Убрать из избранного: " : "В избранное: ") + byId.get(id).name);
+    }
+  }
   function starBtn(ex, cls) {
     const on = favs.has(ex.id);
     const b = el("button", {
@@ -260,14 +273,13 @@
     });
     b.addEventListener("click", () => {
       toggleFav(ex.id);
-      render();
-      const again = list.querySelector('.card-star[data-id="' + ex.id + '"]');
-      if (again) again.focus();
+      syncStars(ex.id);
+      if (state.fav) render();
     });
     return b;
   }
 
-  function card(ex) {
+  function card(ex, ctx, getIds) {
     const img = el("img", { alt: ex.name + " — рисунок", width: 200, height: 218, loading: "lazy", decoding: "async" });
     img.src = imgSrc(ex.id, "");
     const btn = el("button", { type: "button", class: "item", "data-id": ex.id }, [
@@ -278,7 +290,7 @@
         el("span", { class: "item-eq", text: ex.time ? ex.time + " сек" : (equipName.get(ex.equip) || "") }),
       ]),
     ]);
-    btn.addEventListener("click", () => openDetail(ex.id, visibleIds));
+    btn.addEventListener("click", () => openDetail(ex.id, getIds ? getIds() : visibleIds, ctx));
     // на ПК фигурка двигается при наведении
     btn.addEventListener("pointerenter", () => {
       if (canHover.matches && !reduceMotion.matches) img.src = imgSrc(ex.id, "-anim");
@@ -326,7 +338,7 @@
         el("h2", { class: "section-head" }, [
           document.createTextNode(groupName.get(gid) + " "), el("small", { text: String(items.length) }),
         ]),
-        el("ul", { class: "grid" }, items.map(card)),
+        el("ul", { class: "grid" }, items.map((ex) => card(ex))),
       ]));
     }
     list.replaceChildren(frag);
@@ -356,6 +368,7 @@
   const tWork = $("t-work");
   const tTimerBox = dlg.querySelector(".d-timer");
   let current = null;
+  let currentCtx = "";
   let navIds = [];
   let returnId = null;
 
@@ -463,10 +476,16 @@
 
   function fillList(node, items) { node.replaceChildren(...items.map((t) => el("li", { text: t }))); }
 
-  function openDetail(id, ids) {
+  function openDetail(id, ids, ctx) {
     const ex = byId.get(id);
     if (!ex) return;
     current = ex;
+    currentCtx = ctx === "her" && ex.her ? "her" : "";
+    const her = currentCtx ? ex.her : null;
+    const load = her ? her.load : ex.load;
+    const note = $("d-note");
+    note.hidden = !(her && her.note);
+    note.textContent = her && her.note ? "При дисплазии: " + her.note : "";
     navIds = Array.isArray(ids) && ids.includes(id) ? ids : [id];
     if (!dlg.open) returnId = id;
     dlg.dataset.group = ex.group;
@@ -477,15 +496,16 @@
     const img = $("d-img");
     img.alt = ex.name + ": исходное и конечное положение";
     img.src = imgSrc(ex.id, "-how");
-    $("d-load").replaceChildren(...ex.load.map((r) => el("tr", null, [
+    $("d-load").replaceChildren(...load.map((r) => el("tr", null, [
       el("td", { text: r.goal }), el("td", { text: r.sets }), el("td", { text: r.reps }), el("td", { text: r.rest }),
     ])));
     $("d-explain").textContent = ex.time
       ? "Делай упражнение без остановки " + ex.time + " секунд, потом переходи к следующему."
       : "Подход — это несколько повторов подряд без отдыха. Например, 3 подхода по 10 раз: "
         + "сделал 10 раз, отдохнул, ещё 10 раз, отдохнул, ещё 10 раз. "
-        + "Цель выбирай одну — для начала подойдёт «" + ex.load[ex.load.length > 2 ? 1 : 0].goal + "».";
-    $("d-tip").textContent = "Какой вес взять: " + ex.tip.charAt(0).toLowerCase() + ex.tip.slice(1);
+        + (load.length > 1 ? "Цель выбирай одну — для начала подойдёт «" + load[load.length > 2 ? 1 : 0].goal + "»." : "");
+    const tip = her ? her.tip : ex.tip;
+    $("d-tip").textContent = "Какой вес взять: " + tip.charAt(0).toLowerCase() + tip.slice(1);
     fillList($("d-steps"), ex.steps);
     fillList($("d-mistakes"), ex.mistakes);
     const on = favs.has(ex.id);
@@ -502,7 +522,7 @@
   function step(dir) {
     if (!current) return;
     const i = navIds.indexOf(current.id) + dir;
-    if (i >= 0 && i < navIds.length) openDetail(navIds[i], navIds);
+    if (i >= 0 && i < navIds.length) openDetail(navIds[i], navIds, currentCtx);
   }
   function closeDetail() { if (dlg.open) dlg.close(); }
 
@@ -578,26 +598,65 @@
     for (const it of p.items) s += it.time ? it.time + 10 : it.sets * (40 + it.rest);
     return Math.round(s / 60 / 5) * 5;
   }
-  function renderPrograms() {
-    const frag = document.createDocumentFragment();
-    for (const p of DATA.programs) {
+  function programCards(programs, ctx) {
+    return programs.map((p) => {
       const start = el("button", { type: "button", class: "btn-primary", text: "Начать тренировку" });
       start.addEventListener("click", () => startProgram(p.id));
+      const ids = p.items.map((x) => x.id);
       const items = p.items.map((it) => {
         const ex = byId.get(it.id);
         const name = el("button", { type: "button", class: "linkish", text: ex.name });
-        name.addEventListener("click", () => openDetail(ex.id, p.items.map((x) => x.id)));
+        name.addEventListener("click", () => openDetail(ex.id, ids, ctx));
         return el("li", { "data-group": ex.group }, [name, el("span", { class: "dose", text: itemDose(it) })]);
       });
-      frag.append(el("article", { class: "prog", "aria-label": p.name }, [
+      return el("article", { class: "prog", "aria-label": p.name }, [
         el("h2", { text: p.name }),
         el("p", { class: "prog-meta", text: p.freq + ", около " + estimateMin(p) + " минут" }),
         el("p", { class: "prog-desc", text: p.desc }),
         el("ul", { class: "prog-list" }, items),
         start,
+      ]);
+    });
+  }
+  function renderPrograms() {
+    programsBox.replaceChildren(...programCards(DATA.programs, ""));
+  }
+
+  // ================= раздел «Для неё» =================
+  function renderHer() {
+    const H = DATA.her;
+    const info = H.info;
+    const herIds = H.ids.filter((id) => byId.has(id));
+    const frag = document.createDocumentFragment();
+    frag.append(el("div", { class: "her-intro" }, [
+      el("h2", { class: "her-title", id: "her-title", text: info.title }),
+      el("p", { class: "her-lead", text: info.lead }),
+    ]));
+    frag.append(el("aside", { class: "her-card her-doctor", "aria-label": "Важно" }, [
+      el("p", { class: "her-card-title", text: "Сначала — к врачу" }),
+      el("p", { text: info.doctor }),
+    ]));
+    frag.append(el("aside", { class: "her-card", "aria-label": "Правила" }, [
+      el("p", { class: "her-card-title", text: "Правила безопасности" }),
+      el("ul", { class: "her-rules" }, info.rules.map((r) => el("li", { text: r }))),
+      el("p", { class: "her-avoid", text: info.avoid }),
+      el("p", { class: "her-avoid-list", text: "Из общего списка не подходят: "
+        + info.avoid_ids.filter((id) => byId.has(id)).map((id) => byId.get(id).name).join(", ") + "." }),
+    ]));
+    frag.append(el("h2", { class: "her-h", text: "Программы для неё" }));
+    frag.append(el("div", { class: "programs-list" }, programCards(H.programs, "her")));
+    frag.append(el("h2", { class: "her-h", text: "Упражнения для неё" }));
+    for (const gid of groupOrder) {
+      const items = herIds.map((id) => byId.get(id)).filter((ex) => ex.group === gid);
+      if (!items.length) continue;
+      frag.append(el("section", { class: "section", "data-group": gid, "aria-label": groupName.get(gid) }, [
+        el("h3", { class: "section-head" }, [
+          document.createTextNode(groupName.get(gid) + " "), el("small", { text: String(items.length) }),
+        ]),
+        el("ul", { class: "grid" }, items.map((ex) => card(ex, "her", () => herIds))),
       ]));
     }
-    programsBox.replaceChildren(frag);
+    herBox.replaceChildren(frag);
   }
 
   // ================= проигрыватель =================
@@ -707,11 +766,12 @@
   P.plus.addEventListener("click", () => pTimer.add(15));
   $("p-prev").addEventListener("click", () => { if (P.idx > 0) { pTimer.stop(); P.idx -= 1; P.set = 1; showItem(); } });
   $("p-next").addEventListener("click", () => nextItem());
-  $("p-how").addEventListener("click", () => openDetail(pItem().id, [pItem().id]));
+  $("p-how").addEventListener("click", () => openDetail(pItem().id, [pItem().id], P.ctx));
 
   function startProgram(id) {
-    const prog = DATA.programs.find((p) => p.id === id);
+    const prog = DATA.programs.find((p) => p.id === id) || DATA.her.programs.find((p) => p.id === id);
     if (!prog) return;
+    P.ctx = DATA.her.programs.includes(prog) ? "her" : "";
     unlockAudio();
     P.prog = prog; P.idx = 0; P.set = 1; P.started = Date.now();
     $("p-prog").textContent = prog.name;
@@ -785,5 +845,8 @@
 
   render();
   renderPrograms();
+  renderHer();
+  const savedView = store.get("trenya:view", "list");
+  if (savedView === "programs" || savedView === "her") setView(savedView);
   fromHash();
 })();

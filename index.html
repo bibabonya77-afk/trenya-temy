@@ -17,9 +17,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#EDEFEA" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#141922" media="(prefers-color-scheme: dark)">
-<link rel="stylesheet" href="style.css?v=f14c66d41f">
-<script src="data.js?v=f14c66d41f" defer></script>
-<script src="app.js?v=f14c66d41f" defer></script>
+<link rel="stylesheet" href="style.css?v=4dc5b9b0f0">
+<script src="data.js?v=4dc5b9b0f0" defer></script>
+<script src="app.js?v=4dc5b9b0f0" defer></script>
 </head>
 <body>
 <a class="skip" href="#list">К упражнениям</a>
@@ -31,6 +31,7 @@
     <div class="tabs" role="group" aria-label="Раздел">
       <button type="button" class="tab" id="tab-list" aria-pressed="true">Упражнения</button>
       <button type="button" class="tab" id="tab-programs" aria-pressed="false">Программы</button>
+      <button type="button" class="tab tab-her" id="tab-her" aria-pressed="false">Для неё</button>
     </div>
   </div>
 
@@ -110,6 +111,8 @@
 
 <section id="programs" class="programs" hidden aria-label="Программы"></section>
 
+<section id="her" class="her" hidden aria-labelledby="her-title"></section>
+
 <!-- ===== карточка упражнения ===== -->
 <dialog id="detail" class="detail sheet" aria-labelledby="d-title">
   <div class="sheet-handle" aria-hidden="true"></div>
@@ -123,6 +126,7 @@
     <p class="d-meta" id="d-meta"></p>
     <h2 class="d-title" id="d-title"></h2>
     <p class="d-muscles" id="d-muscles"></p>
+    <p class="d-note" id="d-note" hidden></p>
 
     <figure class="d-anim">
       <img id="d-anim" alt="" width="200" height="218">
