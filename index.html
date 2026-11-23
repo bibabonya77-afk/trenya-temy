@@ -2,11 +2,11 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; require-trusted-types-for 'script'; trusted-types 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; worker-src 'self'; style-src 'self'; img-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; require-trusted-types-for 'script'; trusted-types sw-url; upgrade-insecure-requests">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="description" content="Упражнения с гантелями и длинной гантелью на все группы мышц: картинки и техника выполнения.">
+<meta name="description" content="Упражнения с гантелями и длинной гантелью на все группы мышц: анимация, техника, программы и таймер.">
 <title>треня темы</title>
 <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -17,32 +17,82 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#EDEFEA" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#141922" media="(prefers-color-scheme: dark)">
-<link rel="stylesheet" href="style.css">
-<script src="data.js" defer></script>
-<script src="app.js" defer></script>
+<link rel="stylesheet" href="style.css?v=a75a307a9c">
+<script src="data.js?v=a75a307a9c" defer></script>
+<script src="app.js?v=a75a307a9c" defer></script>
 </head>
 <body>
 <a class="skip" href="#list">К упражнениям</a>
 
 <header class="top">
-  <h1 class="title">треня темы</h1>
-  <p class="lead" id="lead">Упражнения с гантелями на всё тело: как выглядит и как делать.</p>
+  <div class="top-text">
+    <h1 class="title">треня темы</h1>
+    <p class="lead">Упражнения с гантелями на всё тело: как выглядит, как делать и сколько.</p>
+    <div class="tabs" role="group" aria-label="Раздел">
+      <button type="button" class="tab" id="tab-list" aria-pressed="true">Упражнения</button>
+      <button type="button" class="tab" id="tab-programs" aria-pressed="false">Программы</button>
+    </div>
+  </div>
+
+  <div class="map-wrap" id="map-wrap">
+    <p class="map-hint" id="map-hint">Нажми на мышцу, чтобы увидеть упражнения на неё</p>
+    <svg class="bodymap" id="bodymap" viewBox="0 0 270 296" role="group" aria-label="Карта мышц: спереди и сзади">
+      <!-- ===== спереди ===== -->
+      <g class="b" aria-hidden="true">
+        <circle cx="65" cy="22" r="14"/>
+        <rect x="59" y="34" width="12" height="12" rx="3"/>
+        <rect x="43" y="136" width="44" height="26" rx="10"/>
+        <rect x="46" y="219" width="15" height="52" rx="7"/>
+        <rect x="69" y="219" width="15" height="52" rx="7"/>
+        <ellipse cx="51" cy="276" rx="9" ry="5"/>
+        <ellipse cx="79" cy="276" rx="9" ry="5"/>
+        <circle cx="24" cy="165" r="6"/>
+        <circle cx="106" cy="165" r="6"/>
+      </g>
+      <g class="m" data-m="delt" tabindex="0" role="button" aria-label="Плечи" aria-pressed="false"><circle cx="37" cy="58" r="11"/><circle cx="93" cy="58" r="11"/></g>
+      <g class="m" data-m="chest" tabindex="0" role="button" aria-label="Грудь" aria-pressed="false"><rect x="41" y="50" width="23" height="33" rx="8"/><rect x="66" y="50" width="23" height="33" rx="8"/></g>
+      <g class="m" data-m="core" tabindex="0" role="button" aria-label="Пресс" aria-pressed="false"><rect x="53" y="86" width="24" height="49" rx="7"/></g>
+      <g class="m" data-m="obliques" tabindex="0" role="button" aria-label="Косые мышцы" aria-pressed="false"><rect x="42" y="88" width="9" height="45" rx="4.5"/><rect x="79" y="88" width="9" height="45" rx="4.5"/></g>
+      <g class="m" data-m="bi" tabindex="0" role="button" aria-label="Бицепс" aria-pressed="false"><rect x="22" y="70" width="13" height="40" rx="6.5"/><rect x="95" y="70" width="13" height="40" rx="6.5"/></g>
+      <g class="m" data-m="fa" tabindex="0" role="button" aria-label="Предплечья" aria-pressed="false"><rect x="18" y="113" width="12" height="45" rx="6"/><rect x="100" y="113" width="12" height="45" rx="6"/></g>
+      <g class="m" data-m="quads" tabindex="0" role="button" aria-label="Квадрицепс" aria-pressed="false"><rect x="43" y="160" width="21" height="57" rx="9"/><rect x="66" y="160" width="21" height="57" rx="9"/></g>
+      <text class="map-cap" x="65" y="294" text-anchor="middle">спереди</text>
+
+      <!-- ===== сзади ===== -->
+      <g class="b" aria-hidden="true">
+        <circle cx="200" cy="22" r="14"/>
+        <rect x="194" y="34" width="12" height="10" rx="3"/>
+        <circle cx="159" cy="165" r="6"/>
+        <circle cx="241" cy="165" r="6"/>
+        <ellipse cx="188" cy="276" rx="9" ry="5"/>
+        <ellipse cx="212" cy="276" rx="9" ry="5"/>
+        <rect x="176" y="80" width="48" height="58" rx="10"/>
+      </g>
+      <g class="m" data-m="traps" tabindex="0" role="button" aria-label="Трапеции" aria-pressed="false"><polygon points="200,38 176,55 200,88 224,55"/></g>
+      <g class="m" data-m="delt" tabindex="0" role="button" aria-label="Плечи" aria-pressed="false"><circle cx="172" cy="58" r="11"/><circle cx="228" cy="58" r="11"/></g>
+      <g class="m" data-m="back" tabindex="0" role="button" aria-label="Широчайшие" aria-pressed="false"><polygon points="176,66 196,92 195,120 180,116 175,90"/><polygon points="224,66 204,92 205,120 220,116 225,90"/></g>
+      <g class="m" data-m="lowback" tabindex="0" role="button" aria-label="Поясница" aria-pressed="false"><rect x="188" y="114" width="24" height="22" rx="6"/></g>
+      <g class="m" data-m="tri" tabindex="0" role="button" aria-label="Трицепс" aria-pressed="false"><rect x="157" y="70" width="13" height="40" rx="6.5"/><rect x="230" y="70" width="13" height="40" rx="6.5"/></g>
+      <g class="m" data-m="fa" tabindex="0" role="button" aria-label="Предплечья" aria-pressed="false"><rect x="153" y="113" width="12" height="45" rx="6"/><rect x="235" y="113" width="12" height="45" rx="6"/></g>
+      <g class="m" data-m="glutes" tabindex="0" role="button" aria-label="Ягодицы" aria-pressed="false"><rect x="177" y="138" width="22" height="29" rx="10"/><rect x="201" y="138" width="22" height="29" rx="10"/></g>
+      <g class="m" data-m="hams" tabindex="0" role="button" aria-label="Бицепс бедра" aria-pressed="false"><rect x="178" y="169" width="20" height="48" rx="9"/><rect x="202" y="169" width="20" height="48" rx="9"/></g>
+      <g class="m" data-m="calves" tabindex="0" role="button" aria-label="Икры" aria-pressed="false"><rect x="180" y="220" width="16" height="50" rx="8"/><rect x="204" y="220" width="16" height="50" rx="8"/></g>
+      <text class="map-cap" x="200" y="294" text-anchor="middle">сзади</text>
+    </svg>
+  </div>
 </header>
 
-<nav class="filters" aria-label="Фильтры">
-  <fieldset class="plates">
-    <legend class="visually-hidden">Группа мышц</legend>
-    <div class="plates-row" id="groups"></div>
-  </fieldset>
-
-  <div class="filters-row">
-    <fieldset class="seg">
-      <legend class="visually-hidden">Снаряд</legend>
-      <div class="seg-row" id="equip"></div>
-    </fieldset>
+<!-- ===== липкая панель фильтров ===== -->
+<nav class="bar" id="bar" aria-label="Фильтры">
+  <div class="bar-inner">
+    <div class="bar-chips">
+      <button type="button" class="chip-muscle" id="muscle-chip" hidden></button>
+      <div class="seg-row" id="equip" role="group" aria-label="Снаряд"></div>
+      <button type="button" class="fav-toggle" id="fav-toggle" aria-pressed="false">★ Избранное</button>
+    </div>
     <label class="search">
       <span class="visually-hidden">Поиск упражнения</span>
-      <input id="q" type="search" placeholder="Поиск: жим, бицепс, присед…" maxlength="40" autocomplete="off" spellcheck="false">
+      <input id="q" type="search" placeholder="Поиск" maxlength="40" autocomplete="off" spellcheck="false">
     </label>
   </div>
 </nav>
@@ -51,32 +101,99 @@
   <noscript><p class="empty">Включи JavaScript, чтобы увидеть список упражнений.</p></noscript>
 </main>
 
-<dialog id="detail" class="detail" aria-labelledby="d-title">
+<section id="programs" class="programs" hidden aria-label="Программы"></section>
+
+<!-- ===== карточка упражнения ===== -->
+<dialog id="detail" class="detail sheet" aria-labelledby="d-title">
+  <div class="sheet-handle" aria-hidden="true"></div>
   <div class="detail-inner">
-    <button class="close" id="d-close" type="button" aria-label="Закрыть">×</button>
+    <div class="d-top">
+      <button class="icon-btn" id="d-prev" type="button" aria-label="Предыдущее упражнение">‹</button>
+      <button class="icon-btn" id="d-next" type="button" aria-label="Следующее упражнение">›</button>
+      <button class="icon-btn star" id="d-star" type="button" aria-pressed="false" aria-label="В избранное">★</button>
+      <button class="icon-btn" id="d-close" type="button" aria-label="Закрыть">×</button>
+    </div>
     <p class="d-meta" id="d-meta"></p>
     <h2 class="d-title" id="d-title"></h2>
     <p class="d-muscles" id="d-muscles"></p>
+
     <figure class="d-anim">
       <img id="d-anim" alt="" width="200" height="218">
       <figcaption>
         <span>Цветом выделены мышцы, которые работают.</span>
-        <button type="button" class="anim-toggle" id="d-toggle" aria-pressed="true">Пауза</button>
+        <button type="button" class="pill" id="d-toggle" aria-pressed="true">Пауза</button>
       </figcaption>
     </figure>
+
+    <section class="d-timer" aria-label="Таймер">
+      <div class="timer-face">
+        <span class="timer-display" id="t-display" aria-live="off">0:00</span>
+        <span class="timer-label" id="t-label">Таймер подхода и отдыха</span>
+      </div>
+      <div class="timer-btns">
+        <button type="button" class="btn-primary" id="t-work">Старт подхода</button>
+        <span class="rest-row" id="t-rest"></span>
+      </div>
+    </section>
+
+    <h3>Сколько делать</h3>
+    <table class="load">
+      <thead><tr><th scope="col">Цель</th><th scope="col">Подходы × повторы</th><th scope="col">Отдых</th></tr></thead>
+      <tbody id="d-load"></tbody>
+    </table>
+    <p class="d-tip" id="d-tip"></p>
+
+    <h3>Как делать</h3>
     <figure class="d-fig">
       <img id="d-img" alt="" width="422" height="218">
       <figcaption>1 — исходное положение, 2 — конечное. Стрелка показывает движение.</figcaption>
     </figure>
-    <h3>Как делать</h3>
     <ol class="d-steps" id="d-steps"></ol>
     <h3>Частые ошибки</h3>
     <ul class="d-mistakes" id="d-mistakes"></ul>
   </div>
 </dialog>
 
+<!-- ===== проигрыватель программы ===== -->
+<dialog id="player" class="player" aria-labelledby="p-name">
+  <div class="player-inner">
+    <div class="p-head">
+      <p class="p-prog" id="p-prog"></p>
+      <button class="icon-btn" id="p-close" type="button" aria-label="Закончить тренировку">×</button>
+    </div>
+    <progress id="p-progress" max="1" value="0" aria-label="Прогресс тренировки"></progress>
+    <div id="p-work">
+      <p class="p-step" id="p-step"></p>
+      <img class="p-img" id="p-img" alt="" width="200" height="218">
+      <h2 class="p-name" id="p-name"></h2>
+      <p class="p-target" id="p-target"></p>
+      <div class="p-timer" id="p-timer">0:00</div>
+      <p class="p-phase" id="p-phase" aria-live="polite"></p>
+      <div class="p-actions">
+        <button type="button" class="btn-primary big" id="p-main"></button>
+        <button type="button" class="pill" id="p-plus" hidden>+15 сек</button>
+      </div>
+      <div class="p-nav">
+        <button type="button" class="pill" id="p-prev">‹ Назад</button>
+        <button type="button" class="pill" id="p-how">Как делать</button>
+        <button type="button" class="pill" id="p-next">Дальше ›</button>
+      </div>
+    </div>
+    <div id="p-done" class="p-done" hidden>
+      <h2>Тренировка завершена</h2>
+      <p id="p-summary"></p>
+      <button type="button" class="btn-primary big" id="p-finish">Готово</button>
+    </div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" hidden>
+  <span id="toast-text"></span>
+  <button type="button" class="pill" id="toast-btn">Обновить</button>
+</div>
+
 <footer class="foot">
-  <p>Начинай с лёгкого веса и следи за техникой. Если что-то болит в суставах — остановись.</p>
+  <p>Начинай с лёгкого веса и следи за техникой. Если что-то болит в суставах — остановись. Сайт работает и без интернета после первого открытия.</p>
 </footer>
 </body>
 </html>
