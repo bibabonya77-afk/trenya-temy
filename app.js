@@ -72,6 +72,7 @@
       }
       if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
     } catch (e) { audioCtx = null; }
+    unlockSpeech();
   }
   // Три разных сигнала:
   //  stop — подход или упражнение закончено, начинается отдых (два тона вниз)
@@ -82,8 +83,42 @@
     go:   { notes: [[880, 0, .16], [880, .26, .16], [1320, .52, .3]], vibrate: [200, 100, 200, 100, 300] },
     done: { notes: [[523, 0, .16], [659, .18, .16], [784, .36, .16], [1047, .54, .45]], vibrate: [150, 80, 150, 80, 500] },
   };
-  function sound(kind) {
+  // ---- голосовые подсказки (встроенный синтез речи устройства, без интернета и серверов)
+  const speech = "speechSynthesis" in window ? window.speechSynthesis : null;
+  let voiceOn = store.get("trenya:voice", true) !== false;
+  let ruVoice = null;
+  function pickVoice() {
+    if (!speech) return;
+    const ru = speech.getVoices().filter((v) => /^ru/i.test(v.lang));
+    ruVoice = ru.find((v) => v.localService) || ru[0] || null;
+  }
+  if (speech) {
+    pickVoice();
+    if ("onvoiceschanged" in speech) speech.addEventListener("voiceschanged", pickVoice);
+  }
+  let speechUnlocked = false;
+  function unlockSpeech() {
+    // iOS разрешает речь только после нажатия: «проговариваем» пустую фразу
+    if (!speech || speechUnlocked) return;
+    speechUnlocked = true;
+    try { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speech.speak(u); } catch (e) { /* нет речи */ }
+  }
+  function say(text) {
+    if (!speech || !voiceOn || !text) return;
+    try {
+      speech.cancel();
+      const u = new SpeechSynthesisUtterance(String(text).slice(0, 160));
+      u.lang = "ru-RU";
+      if (ruVoice) u.voice = ruVoice;
+      u.rate = 1; u.volume = 1;
+      speech.speak(u);
+    } catch (e) { /* нет речи */ }
+  }
+  const secText = (n) => n + " " + plural(n, "секунда", "секунды", "секунд");
+
+  function sound(kind, phrase) {
     const snd = SOUNDS[kind] || SOUNDS.go;
+    if (phrase) setTimeout(() => say(phrase), kind === "done" ? 1100 : 850);
     if (navigator.vibrate) navigator.vibrate(snd.vibrate);
     if (!audioCtx) return;
     try {
@@ -359,7 +394,7 @@
     tLabel.textContent = "Отдых " + sec + " сек";
     tWork.textContent = current.time ? "Старт · " + current.time + " сек" : "Старт подхода";
     dTimer.countdown(sec, () => {
-      sound("go");
+      sound("go", "Отдых окончен. Следующий подход");
       tTimerBox.classList.remove("resting");
       tLabel.textContent = "Отдых окончен — следующий подход";
     });
@@ -371,7 +406,7 @@
     if (current.time) {
       if (dTimer.mode === "down") { timerReset(); return; }
       dTimer.countdown(current.time, () => {
-        sound("stop");
+        sound("stop", "Время вышло");
         tLabel.textContent = "Готово";
         tWork.textContent = "Ещё раз";
       });
@@ -381,7 +416,7 @@
     }
     if (dTimer.mode === "up") {
       // подход закончен: сигнал и сразу отсчёт отдыха
-      sound("stop");
+      sound("stop", "Подход окончен. Отдых " + secText(restSec));
       startRest(restSec);
     } else {
       dTimer.stopwatch();
@@ -391,7 +426,30 @@
   });
   function soundTestBtn() {
     const b = el("button", { type: "button", class: "pill sound-test", text: "🔊 Проверить звук" });
-    b.addEventListener("click", () => { unlockAudio(); sound("go"); });
+    b.addEventListener("click", () => {
+      unlockAudio();
+      sound("go", voiceOn ? (ruVoice || !speech ? "Отдых окончен. Следующий подход" : "Отдых окончен") : "");
+    });
+    return b;
+  }
+  const voiceBtns = [];
+  function syncVoiceBtns() {
+    for (const b of voiceBtns) {
+      b.setAttribute("aria-pressed", String(voiceOn));
+      b.textContent = voiceOn ? "🗣 Голос: вкл" : "🗣 Голос: выкл";
+    }
+  }
+  function voiceBtn() {
+    const b = el("button", { type: "button", class: "pill sound-test voice-btn" });
+    if (!speech) { b.disabled = true; b.textContent = "🗣 Голос недоступен"; return b; }
+    b.addEventListener("click", () => {
+      voiceOn = !voiceOn;
+      store.set("trenya:voice", voiceOn);
+      syncVoiceBtns();
+      if (voiceOn) { unlockAudio(); say("Голосовые подсказки включены"); } else speech.cancel();
+    });
+    voiceBtns.push(b);
+    syncVoiceBtns();
     return b;
   }
   const restBox = $("t-rest");
@@ -401,7 +459,7 @@
     restBtns.push(b);
     restBox.append(b);
   }
-  restBox.after(soundTestBtn());
+  restBox.after(soundTestBtn(), voiceBtn());
 
   function fillList(node, items) { node.replaceChildren(...items.map((t) => el("li", { text: t }))); }
 
@@ -551,7 +609,7 @@
     progress: $("p-progress"),
   };
   const pTimer = new Timer((s) => { P.timer.textContent = fmt(s); });
-  document.querySelector(".p-nav").append(soundTestBtn());
+  document.querySelector(".p-nav").append(soundTestBtn(), voiceBtn());
 
   function pItem() { return P.prog.items[P.idx]; }
 
@@ -584,7 +642,10 @@
         P.phaseEl.textContent = "Выполняй";
         P.main.textContent = "Пропустить";
         pTimer.countdown(it.time, () => {
-          if (P.idx >= P.prog.items.length - 1) finish(); else { sound("stop"); nextItem(); }
+          if (P.idx >= P.prog.items.length - 1) { finish(); return; }
+          const nx = byId.get(P.prog.items[P.idx + 1].id);
+          sound("stop", "Время вышло. Дальше: " + nx.name);
+          nextItem();
         });
       }
       return;
@@ -603,7 +664,15 @@
       const nextEx = last && P.prog.items[P.idx + 1] ? byId.get(P.prog.items[P.idx + 1].id) : null;
       P.phaseEl.textContent = last ? (nextEx ? "Отдых. Дальше: " + nextEx.name : "Отдых") : "Отдых";
       P.main.textContent = "Пропустить отдых";
-      pTimer.countdown(it.rest, () => { sound("go"); afterRest(); });
+      pTimer.countdown(it.rest, () => {
+        if (last) {
+          const nx = P.prog.items[P.idx + 1] ? byId.get(P.prog.items[P.idx + 1].id) : null;
+          sound("go", nx ? "Отдых окончен. Следующее упражнение: " + nx.name : "Отдых окончен");
+        } else {
+          sound("go", "Отдых окончен. Подход " + (P.set + 1) + " из " + it.sets);
+        }
+        afterRest();
+      });
     }
   }
 
@@ -628,7 +697,11 @@
     else if (P.phase === "work") {
       if (it.time) nextItem();
       else if (P.set >= it.sets && P.idx >= P.prog.items.length - 1) finish();
-      else { sound("stop"); setPhase("rest"); }
+      else {
+        const lastSet = P.set >= it.sets;
+        sound("stop", (lastSet ? "Упражнение закончено. Отдых " : "Подход окончен. Отдых ") + secText(it.rest));
+        setPhase("rest");
+      }
     } else if (P.phase === "rest") { pTimer.stop(); afterRest(); }
   });
   P.plus.addEventListener("click", () => pTimer.add(15));
@@ -653,7 +726,7 @@
     $("p-work").hidden = true; $("p-done").hidden = false;
     const min = Math.max(1, Math.round((Date.now() - P.started) / 60000));
     $("p-summary").textContent = "Время: " + min + " мин. Упражнений: " + P.prog.items.length + ".";
-    sound("done");
+    sound("done", "Тренировка завершена. Отличная работа!");
   }
   function closePlayer(ask) {
     const inProgress = !$("p-work").hidden && (P.idx > 0 || P.phase !== "ready");
