@@ -382,3 +382,8 @@ progress { width: 100%; height: .5rem; margin: .6rem 0 0; accent-color: var(--c,
   .load { font-size: .88rem; }
   .load th { font-size: .72rem; }
 }
+
+.sound-test { font-size: .85rem; border-color: var(--line); }
+.p-sounds { margin: 1.2rem auto 0; max-width: 28rem; color: var(--muted); font-size: .85rem; }
+
+.timer-note { flex: 1 1 100%; margin: 0; font-size: .8rem; color: var(--muted); }

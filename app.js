@@ -73,21 +73,36 @@
       if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
     } catch (e) { audioCtx = null; }
   }
-  function beep() {
-    if (navigator.vibrate) navigator.vibrate([220, 120, 220]);
+  // Три разных сигнала:
+  //  stop — подход или упражнение закончено, начинается отдых (два тона вниз)
+  //  go   — отдых окончен, пора делать подход (три писка, последний выше)
+  //  done — тренировка завершена (короткая мелодия вверх)
+  const SOUNDS = {
+    stop: { notes: [[784, 0, .32], [523, .36, .42]], vibrate: [400, 150, 400] },
+    go:   { notes: [[880, 0, .16], [880, .26, .16], [1320, .52, .3]], vibrate: [200, 100, 200, 100, 300] },
+    done: { notes: [[523, 0, .16], [659, .18, .16], [784, .36, .16], [1047, .54, .45]], vibrate: [150, 80, 150, 80, 500] },
+  };
+  function sound(kind) {
+    const snd = SOUNDS[kind] || SOUNDS.go;
+    if (navigator.vibrate) navigator.vibrate(snd.vibrate);
     if (!audioCtx) return;
-    const t0 = audioCtx.currentTime;
-    for (let i = 0; i < 3; i++) {
-      const o = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
-      const t = t0 + i * 0.26;
-      o.frequency.value = i === 2 ? 1320 : 880;
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.35, t + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
-      o.connect(g).connect(audioCtx.destination);
-      o.start(t); o.stop(t + 0.22);
-    }
+    try {
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      const t0 = audioCtx.currentTime + 0.02;
+      for (const [freq, at, len] of snd.notes) {
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        const t = t0 + at;
+        o.type = "sine";
+        o.frequency.value = freq;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.4, t + 0.02);
+        g.gain.setValueAtTime(0.4, t + len * 0.6);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+        o.connect(g).connect(audioCtx.destination);
+        o.start(t); o.stop(t + len + 0.02);
+      }
+    } catch (e) { /* звук недоступен */ }
   }
   let wakeLock = null;
   async function keepAwake(on) {
@@ -113,7 +128,7 @@
         const left = (this.end - Date.now()) / 1000;
         if (left <= 0) {
           const cb = this.onDone;
-          this.stop(); this.onTick(0, "down"); beep();
+          this.stop(); this.onTick(0, "down");
           if (cb) cb();
           return;
         }
@@ -330,43 +345,63 @@
     tLabel.textContent = current && current.time ? "Таймер упражнения" : "Таймер подхода и отдыха";
     tWork.textContent = current && current.time ? "Старт · " + current.time + " сек" : "Старт подхода";
   }
+  // Отдых по умолчанию — последний выбранный (запоминается на устройстве)
+  const REST_OPTIONS = [60, 90, 120];
+  let restSec = store.get("trenya:rest", 90);
+  if (!REST_OPTIONS.includes(restSec)) restSec = 90;
+  const restBtns = [];
+
+  function startRest(sec) {
+    restSec = sec;
+    store.set("trenya:rest", sec);
+    for (const b of restBtns) b.setAttribute("aria-pressed", String(Number(b.dataset.sec) === sec));
+    tTimerBox.classList.add("resting");
+    tLabel.textContent = "Отдых " + sec + " сек";
+    tWork.textContent = current.time ? "Старт · " + current.time + " сек" : "Старт подхода";
+    dTimer.countdown(sec, () => {
+      sound("go");
+      tTimerBox.classList.remove("resting");
+      tLabel.textContent = "Отдых окончен — следующий подход";
+    });
+  }
+
   tWork.addEventListener("click", () => {
     unlockAudio();
     tTimerBox.classList.remove("resting");
     if (current.time) {
       if (dTimer.mode === "down") { timerReset(); return; }
-      dTimer.countdown(current.time, () => { tLabel.textContent = "Готово"; tWork.textContent = "Ещё раз"; });
+      dTimer.countdown(current.time, () => {
+        sound("stop");
+        tLabel.textContent = "Готово";
+        tWork.textContent = "Ещё раз";
+      });
       tLabel.textContent = "Выполняй";
       tWork.textContent = "Стоп";
       return;
     }
     if (dTimer.mode === "up") {
-      const took = dTimer.elapsed();
-      dTimer.stop();
-      tDisplay.textContent = fmt(took);
-      tLabel.textContent = "Подход занял " + fmt(took) + ". Теперь отдых";
-      tWork.textContent = "Старт подхода";
+      // подход закончен: сигнал и сразу отсчёт отдыха
+      sound("stop");
+      startRest(restSec);
     } else {
       dTimer.stopwatch();
       tLabel.textContent = "Подход идёт";
       tWork.textContent = "Подход сделан";
     }
   });
+  function soundTestBtn() {
+    const b = el("button", { type: "button", class: "pill sound-test", text: "🔊 Проверить звук" });
+    b.addEventListener("click", () => { unlockAudio(); sound("go"); });
+    return b;
+  }
   const restBox = $("t-rest");
-  for (const sec of [60, 90, 120]) {
-    const b = el("button", { type: "button", class: "pill", text: "Отдых " + sec });
-    b.addEventListener("click", () => {
-      unlockAudio();
-      tTimerBox.classList.add("resting");
-      tLabel.textContent = "Отдых";
-      tWork.textContent = current.time ? "Старт · " + current.time + " сек" : "Старт подхода";
-      dTimer.countdown(sec, () => {
-        tTimerBox.classList.remove("resting");
-        tLabel.textContent = "Отдых окончен — следующий подход";
-      });
-    });
+  for (const sec of REST_OPTIONS) {
+    const b = el("button", { type: "button", class: "pill", "data-sec": sec, "aria-pressed": sec === restSec, text: "Отдых " + sec });
+    b.addEventListener("click", () => { unlockAudio(); startRest(sec); });
+    restBtns.push(b);
     restBox.append(b);
   }
+  restBox.after(soundTestBtn());
 
   function fillList(node, items) { node.replaceChildren(...items.map((t) => el("li", { text: t }))); }
 
@@ -516,6 +551,7 @@
     progress: $("p-progress"),
   };
   const pTimer = new Timer((s) => { P.timer.textContent = fmt(s); });
+  document.querySelector(".p-nav").append(soundTestBtn());
 
   function pItem() { return P.prog.items[P.idx]; }
 
@@ -547,7 +583,9 @@
       } else if (phase === "work") {
         P.phaseEl.textContent = "Выполняй";
         P.main.textContent = "Пропустить";
-        pTimer.countdown(it.time, nextItem);
+        pTimer.countdown(it.time, () => {
+          if (P.idx >= P.prog.items.length - 1) finish(); else { sound("stop"); nextItem(); }
+        });
       }
       return;
     }
@@ -565,7 +603,7 @@
       const nextEx = last && P.prog.items[P.idx + 1] ? byId.get(P.prog.items[P.idx + 1].id) : null;
       P.phaseEl.textContent = last ? (nextEx ? "Отдых. Дальше: " + nextEx.name : "Отдых") : "Отдых";
       P.main.textContent = "Пропустить отдых";
-      pTimer.countdown(it.rest, afterRest);
+      pTimer.countdown(it.rest, () => { sound("go"); afterRest(); });
     }
   }
 
@@ -590,7 +628,7 @@
     else if (P.phase === "work") {
       if (it.time) nextItem();
       else if (P.set >= it.sets && P.idx >= P.prog.items.length - 1) finish();
-      else setPhase("rest");
+      else { sound("stop"); setPhase("rest"); }
     } else if (P.phase === "rest") { pTimer.stop(); afterRest(); }
   });
   P.plus.addEventListener("click", () => pTimer.add(15));
@@ -615,7 +653,7 @@
     $("p-work").hidden = true; $("p-done").hidden = false;
     const min = Math.max(1, Math.round((Date.now() - P.started) / 60000));
     $("p-summary").textContent = "Время: " + min + " мин. Упражнений: " + P.prog.items.length + ".";
-    beep();
+    sound("done");
   }
   function closePlayer(ask) {
     const inProgress = !$("p-work").hidden && (P.idx > 0 || P.phase !== "ready");
