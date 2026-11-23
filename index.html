@@ -17,9 +17,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#EDEFEA" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#141922" media="(prefers-color-scheme: dark)">
-<link rel="stylesheet" href="style.css?v=a75a307a9c">
-<script src="data.js?v=a75a307a9c" defer></script>
-<script src="app.js?v=a75a307a9c" defer></script>
+<link rel="stylesheet" href="style.css?v=b749f77abc">
+<script src="data.js?v=b749f77abc" defer></script>
+<script src="app.js?v=b749f77abc" defer></script>
 </head>
 <body>
 <a class="skip" href="#list">К упражнениям</a>
@@ -35,7 +35,14 @@
   </div>
 
   <div class="map-wrap" id="map-wrap">
-    <p class="map-hint" id="map-hint">Нажми на мышцу, чтобы увидеть упражнения на неё</p>
+    <p class="map-hint" id="map-hint">Нажми на одну или несколько мышц, чтобы увидеть упражнения на них</p>
+    <div class="map-sel" id="map-sel" hidden>
+      <span id="map-sel-text" aria-live="polite"></span>
+      <span class="map-sel-btns">
+        <button type="button" class="btn-primary" id="map-show">Показать ↓</button>
+        <button type="button" class="pill" id="map-clear">Сбросить</button>
+      </span>
+    </div>
     <svg class="bodymap" id="bodymap" viewBox="0 0 270 296" role="group" aria-label="Карта мышц: спереди и сзади">
       <!-- ===== спереди ===== -->
       <g class="b" aria-hidden="true">
@@ -86,7 +93,7 @@
 <nav class="bar" id="bar" aria-label="Фильтры">
   <div class="bar-inner">
     <div class="bar-chips">
-      <button type="button" class="chip-muscle" id="muscle-chip" hidden></button>
+      <span class="muscle-chips" id="muscle-chips"></span>
       <div class="seg-row" id="equip" role="group" aria-label="Снаряд"></div>
       <button type="button" class="fav-toggle" id="fav-toggle" aria-pressed="false">★ Избранное</button>
     </div>
@@ -138,9 +145,10 @@
 
     <h3>Сколько делать</h3>
     <table class="load">
-      <thead><tr><th scope="col">Цель</th><th scope="col">Подходы × повторы</th><th scope="col">Отдых</th></tr></thead>
+      <thead><tr><th scope="col">Цель</th><th scope="col">Подходов</th><th scope="col">Раз за подход</th><th scope="col">Отдых между подходами</th></tr></thead>
       <tbody id="d-load"></tbody>
     </table>
+    <p class="d-explain" id="d-explain"></p>
     <p class="d-tip" id="d-tip"></p>
 
     <h3>Как делать</h3>

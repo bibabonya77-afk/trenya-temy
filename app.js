@@ -125,7 +125,7 @@
   }
 
   // ================= состояние и вкладки =================
-  const state = { view: "list", muscle: null, equip: "all", fav: false, q: "" };
+  const state = { view: "list", muscles: new Set(), equip: "all", fav: false, q: "" };
   const list = $("list");
   const bar = $("bar");
   const mapWrap = $("map-wrap");
@@ -146,21 +146,26 @@
 
   // ================= карта тела =================
   const mapParts = Array.from(document.querySelectorAll("#bodymap .m"));
-  const chip = $("muscle-chip");
-  function selectMuscle(m) {
-    state.muscle = state.muscle === m ? null : m;
+  // Можно выбрать сразу несколько мышц: показываем упражнения хотя бы на одну из них
+  const chipsBox = $("muscle-chips");
+  const mapSel = $("map-sel");
+  const mapHint = $("map-hint");
+  const scrollToList = () => bar.scrollIntoView({ behavior: reduceMotion.matches ? "auto" : "smooth", block: "start" });
+  function toggleMuscle(m) {
+    if (state.muscles.has(m)) state.muscles.delete(m); else state.muscles.add(m);
     render();
-    if (state.muscle) bar.scrollIntoView({ behavior: reduceMotion.matches ? "auto" : "smooth", block: "start" });
   }
+  function clearMuscles() { state.muscles.clear(); render(); }
   for (const part of mapParts) {
     const m = part.getAttribute("data-m");
     if (!muscleName.has(m)) continue;
-    part.addEventListener("click", () => selectMuscle(m));
+    part.addEventListener("click", () => toggleMuscle(m));
     part.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMuscle(m); }
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleMuscle(m); }
     });
   }
-  chip.addEventListener("click", () => { state.muscle = null; render(); });
+  $("map-show").addEventListener("click", scrollToList);
+  $("map-clear").addEventListener("click", clearMuscles);
 
   // ================= фильтры =================
   const equipBox = $("equip");
@@ -187,7 +192,7 @@
   let visibleIds = [];
 
   function matches(ex) {
-    if (state.muscle && !ex.hl.includes(state.muscle)) return false;
+    if (state.muscles.size && !ex.hl.some((m) => state.muscles.has(m))) return false;
     if (state.equip !== "all" && ex.equip !== state.equip) return false;
     if (state.fav && !favs.has(ex.id)) return false;
     if (state.q) {
@@ -235,15 +240,22 @@
   function render() {
     for (const b of equipBtns) b.setAttribute("aria-pressed", String(b.dataset.equip === state.equip));
     favToggle.setAttribute("aria-pressed", String(state.fav));
-    for (const p of mapParts) p.setAttribute("aria-pressed", String(p.getAttribute("data-m") === state.muscle));
-    if (state.muscle) {
-      chip.hidden = false;
-      chip.setAttribute("data-m", state.muscle);
-      chip.textContent = (muscleName.get(state.muscle) || "") + " ×";
-      chip.setAttribute("aria-label", "Сбросить мышцу: " + (muscleName.get(state.muscle) || ""));
-    } else {
-      chip.hidden = true;
+    for (const p of mapParts) p.setAttribute("aria-pressed", String(state.muscles.has(p.getAttribute("data-m"))));
+    const chips = [];
+    for (const m of state.muscles) {
+      const b = el("button", {
+        type: "button", class: "chip-muscle", "data-m": m,
+        "aria-label": "Убрать мышцу: " + muscleName.get(m), text: muscleName.get(m) + " ×",
+      });
+      b.addEventListener("click", () => toggleMuscle(m));
+      chips.push(b);
     }
+    if (state.muscles.size > 1) {
+      const all = el("button", { type: "button", class: "pill", text: "Сбросить" });
+      all.addEventListener("click", clearMuscles);
+      chips.push(all);
+    }
+    chipsBox.replaceChildren(...chips);
 
     const shown = DATA.exercises.filter(matches);
     visibleIds = [];
@@ -268,6 +280,20 @@
       ]));
     }
     list.replaceChildren(frag);
+
+    if (state.muscles.size) {
+      const names = Array.from(state.muscles, (m) => muscleName.get(m)).join(", ");
+      $("map-sel-text").textContent = names + ": " + shown.length + " " + plural(shown.length, "упражнение", "упражнения", "упражнений");
+      mapSel.hidden = false; mapHint.hidden = true;
+    } else {
+      mapSel.hidden = true; mapHint.hidden = false;
+    }
+  }
+  function plural(n, one, few, many) {
+    const d = n % 10, h = n % 100;
+    if (d === 1 && h !== 11) return one;
+    if (d >= 2 && d <= 4 && (h < 12 || h > 14)) return few;
+    return many;
   }
 
   // ================= карточка упражнения =================
@@ -359,9 +385,14 @@
     img.alt = ex.name + ": исходное и конечное положение";
     img.src = imgSrc(ex.id, "-how");
     $("d-load").replaceChildren(...ex.load.map((r) => el("tr", null, [
-      el("td", { text: r.goal }), el("td", { text: r.sets }), el("td", { text: r.rest }),
+      el("td", { text: r.goal }), el("td", { text: r.sets }), el("td", { text: r.reps }), el("td", { text: r.rest }),
     ])));
-    $("d-tip").textContent = ex.tip;
+    $("d-explain").textContent = ex.time
+      ? "Делай упражнение без остановки " + ex.time + " секунд, потом переходи к следующему."
+      : "Подход — это несколько повторов подряд без отдыха. Например, 3 подхода по 10 раз: "
+        + "сделал 10 раз, отдохнул, ещё 10 раз, отдохнул, ещё 10 раз. "
+        + "Цель выбирай одну — для начала подойдёт «" + ex.load[ex.load.length > 2 ? 1 : 0].goal + "».";
+    $("d-tip").textContent = "Какой вес взять: " + ex.tip.charAt(0).toLowerCase() + ex.tip.slice(1);
     fillList($("d-steps"), ex.steps);
     fillList($("d-mistakes"), ex.mistakes);
     const on = favs.has(ex.id);
@@ -444,8 +475,10 @@
   });
 
   // ================= программы =================
+  // «10–12» → «10–12 раз», «10 на ногу» → «10 раз на ногу»
+  function repsText(r) { return / на /.test(r) ? r.replace(" на ", " раз на ") : r + " раз"; }
   function itemDose(it) {
-    return it.time ? it.time + " сек" : it.sets + " × " + it.reps;
+    return it.time ? it.time + " сек" : it.sets + " " + plural(it.sets, "подход", "подхода", "подходов") + " по " + repsText(it.reps);
   }
   function estimateMin(p) {
     let s = 0;
@@ -518,7 +551,7 @@
       }
       return;
     }
-    P.target.textContent = "Подход " + P.set + " из " + it.sets + ", " + it.reps + " повторов";
+    P.target.textContent = "Подход " + P.set + " из " + it.sets + ": сделай " + repsText(it.reps);
     if (phase === "ready") {
       pTimer.stop(); P.timer.textContent = "0:00";
       P.phaseEl.textContent = P.set > 1 ? "Отдых окончен — начинай подход" : "Начинай, когда будешь готов";
